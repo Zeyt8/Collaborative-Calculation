@@ -1,71 +1,69 @@
-# Calcule colaborative in sisteme distribuite
+# Collaborative calculation in distributed systems
 
-Am creat 3 tipuri de proces: Worker, Coordinator si Leader. In main se creeaza o instanta a clasei potrivite in functie de rank si se apeleaza start pe acea instanta.
+We have created three types of processes: Worker, Coordinator, and Leader. In the main function, an instance of the appropriate class is created based on the rank, and the start function is called on that instance.
 
-Inelul parcurs spre dreapta are aceasta ordine: 0 -> 1 -> 2 -> 3 -> 0
+The ring traversed to the right has the following order: 0 -> 1 -> 2 -> 3 -> 0
 
-## Stabilirea Topologiei
+## Establishing the Topology
 
-Fiecare process are un array de vectori in care stocheaza topologia.
+Each process has an array of vectors in which it stores the topology.
 
-Coordonatorii isi stabilesc vecinii si isi citeste din fisierul lui workerii pe care ii are si ii adauga la o lista de workeri.
+Coordinators establish their neighbors and read from their workers' files to add them to a list of workers.
 
-Ideea de la care am pornit este ca fiecare coordonator sa trimita la dreapta lista sa de workeri care sa faca un tur complet de inel.
+The idea we started with is for each coordinator to send its list of workers to the right to make a complete round of the ring.
 
-Coordonatorul isi trimite lista de workeri vecinului din dreapta. Dupa aceea astepta sa cate primeasca o lista de workeri de la fiecare coordonator diferit de el insusi cu tagul egal cu rankul coordonatorului al carui workeri sunt.
+The coordinator sends its list of workers to the neighbor to its right. Then it waits to receive a list of workers from each coordinator other than itself with a tag equal to the rank of the coordinator whose workers they are.
 
-Dupa ce primeste lista, isi updateaza topologia si trimite lista de workeri mai departe vecinului din dreapta.
+After receiving the list, it updates the topology and sends the list of workers further to the neighbor to the right.
 
-Acest lucru se termina atunci cand un coordonator isi primeste propria lista de workeri.
+This process ends when a coordinator receives its own list of workers.
 
-Dupa ce un coordonator are topologia completa o afiseaza in consola si incepe sa comunice cu workerii sai. Le trimite 3 mesaje fiecaruia:
+After a coordinator has the complete topology, it displays it on the console and starts communicating with its workers. It sends three messages to each of them:
 
-- rankul coordonatorului
+- The rank of the coordinator
+- The rank of the worker it's communicating with
+- The topology
 
-- rankul workerului cu care comunica
+Workers display the topology on the console.
 
-- topologia
+## Performing Calculations
 
-Workerii afiseaza la consola topologia.
+The leader creates vector V and calculates chunk, which represents the number of numbers that each worker needs to calculate.
 
-## Realizarea calculelor
+The leader keeps chunk * the number of workers in its cluster of numbers. It sends the rest of the vector to the coordinator on its left.
 
-Leaderul creeaza vectorul V si calculeaza `chunk` care reprezinta numarul de numere care trebuie calculate de fiecare worker.
+The coordinator receives the vector and does the same thing. chunk is recalculated, but only considering the remaining workers.
 
-Leaderul isi pastreaza `chunk` * numarul de workeri din clusterul lui numere. Restul vectorului il trimite coordonatorului din stanga.
+The last coordinator keeps everything it receives.
 
-Coordonatorul primeste vectorul si face acelasi lucru. `chunk` este recalculat, dar luand in considerare doar workerii ramasi.
+Each coordinator sends its workers a piece of the vector it has kept.
 
-Ultimul coordonator pastreaza tot ce primeste.
+A worker calculates the vector multiplied element by element by 5 and sends it back to the coordinator.
 
-Fiecare coordonator trimite workerilor sai cate o bucata din vectorul pe care si l-a pastrat.
+The coordinator receives the vector from each worker in the same order in which it was sent.
 
-Un worker calculeaza vectorul inmultit element cu element cu 5 si il trimite inapoi la coordonator.
+After receiving the vector from all workers, the coordinator sends it to the coordinator on its right, who receives it and sends it further until it reaches the leader.
 
-Coordonatorul primeste vectorul pe rand de la workeri in aceasi ordine in care l-a trimis.
+The leader receives the vector in the same order in which it was sent and displays it on the console.
 
-Dupa ce a primit vectorul de la toti workerii, il trimite la coordonatorul din dreapta, care il primeste si il da mai departe pana la Leader.
+## Handling Communication Channel Defects
 
-Leaderul primeste vectorul in aceasi ordine in care l-a trimis si il afiseaza in consola.
+### Topology
 
-## Tratarea defectelor pe canalul de comuncatie
+If an error occurs between 0 and 1, the idea of each coordinator sending to the right no longer works.
 
-### Topologie
+The idea we started with is for each coordinator to send its list of workers to the left and right to reach the ends.
 
-In cazul existentei unei erori intre 0 si 1 nu mai functioneaza ca fiecare coordonator sa trimita la dreapta.
+The coordinator sends the list of workers to the left and right if there is a corresponding neighbor.
 
-Ideea de la care am pornit este ca fiecare coordonator sa trimita la dreapta si la stanga un mesaj cu lista sa de workeri care sa ajunga pana in capete.
+A coordinator now listens to both its left and right neighbors to receive the list of workers from all coordinators on its left and right in the new topology.
 
-Coordonatorul trimite lista de workeri si in stanga si in dreapta daca exista vecinul respectiv.
+When it receives a message, it updates the topology and sends it further, preserving the direction of the message.
 
-Un coordonator acum asculta si de la vecinul din stanga si de la vecinul din dreapta sa primeasca lista de workeri de la toti coordonatorii care se afla in stanga, respectiv dreapta in noua topologie.
+The messages will stop when they reach one of the ends because they can no longer send further while preserving the direction.
 
-Cand primeste un mesaj, updateaza topologia si trimite mai departe pastrand directia mesajului.
+The transmission of the topology to workers works in the same way.
 
-Mesajele se vor opri cand vor ajunge la unul din capete, deoarece nu mai au cum sa trimita mai departe pastrand directia.
+### Calculations
 
-Transmiterea topologiei catre workeri functioneaza la fel.
-
-### Calcule
-
-Datorita modului in care se impart calculele, nu necesita nicio modificare. Datele se trimit 0 -> 3 -> 2 -> 1 si dupa inapoi pe traseul invers, asadar eroare de pe legatura 0-1 nu afecteaza calculul.
+Due to the way the calculations are divided, no modification is required. The data is sent 0 -> 3 -> 2 -> 1 and then back along the reverse path, so an error on the 0-1 link does not affect the calculation.
